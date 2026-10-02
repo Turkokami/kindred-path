@@ -5,6 +5,7 @@ import Link from "next/link";
 import Avatar, { AvatarState } from "./Avatar";
 import { Mode, journeyFor } from "@/lib/content";
 import { isCrisis } from "@/lib/safety";
+import { WrenVoice } from "@/lib/wrenVoice";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
@@ -82,6 +83,7 @@ export default function Guide({ mode }: { mode: Mode }) {
   const recRef = useRef<SR | null>(null);
   const voiceRef = useRef<SpeechSynthesisVoice | null>(null);
   const voiceOnRef = useRef(true);
+  const wrenRef = useRef<WrenVoice | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -102,6 +104,7 @@ export default function Guide({ mode }: { mode: Mode }) {
     pickVoice();
     if ("speechSynthesis" in window) window.speechSynthesis.onvoiceschanged = pickVoice;
     return () => {
+      wrenRef.current?.cancel();
       if ("speechSynthesis" in window) window.speechSynthesis.cancel();
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
@@ -109,8 +112,9 @@ export default function Guide({ mode }: { mode: Mode }) {
 
   useEffect(() => {
     voiceOnRef.current = voiceOn;
-    if (!voiceOn && "speechSynthesis" in window) {
-      window.speechSynthesis.cancel();
+    if (!voiceOn) {
+      wrenRef.current?.cancel();
+      if ("speechSynthesis" in window) window.speechSynthesis.cancel();
       speakingRef.current = 0;
     }
   }, [voiceOn]);
@@ -122,10 +126,22 @@ export default function Guide({ mode }: { mode: Mode }) {
   // ---------- mouth animation loop ----------
   const animate = useCallback(() => {
     const loop = (t: number) => {
-      if (speakingRef.current > 0) {
+      const lip = wrenRef.current?.mouth() ?? null;
+      if (lip !== null) {
+        // ElevenLabs audio: follow the actual letters, eased so frames don't flicker.
+        energyRef.current += (lip - energyRef.current) * 0.5;
+        setMouth(energyRef.current);
+        rafRef.current = requestAnimationFrame(loop);
+      } else if (speakingRef.current > 0) {
+        // Browser voice: no timings, so use the energy curve.
         energyRef.current = Math.max(0.45, energyRef.current * 0.94);
         const v = energyRef.current * (0.35 + 0.65 * Math.abs(Math.sin(t / 70)) * (0.7 + 0.3 * Math.sin(t / 23)));
         setMouth(v);
+        rafRef.current = requestAnimationFrame(loop);
+      } else if (wrenRef.current?.isActive()) {
+        // Between clips: close the mouth but keep the loop alive.
+        energyRef.current *= 0.7;
+        setMouth(energyRef.current);
         rafRef.current = requestAnimationFrame(loop);
       } else {
         setMouth(0);
@@ -135,32 +151,61 @@ export default function Guide({ mode }: { mode: Mode }) {
     if (!rafRef.current) rafRef.current = requestAnimationFrame(loop);
   }, []);
 
-  const speak = useCallback(
-    (text: string) => {
-      if (!voiceOnRef.current || !("speechSynthesis" in window) || !text.trim()) return;
-      const u = new SpeechSynthesisUtterance(text);
-      if (voiceRef.current) u.voice = voiceRef.current;
-      u.rate = 0.95;
-      u.pitch = 1.05;
-      u.onstart = () => {
-        energyRef.current = 1;
-        setAvatarState("talking");
-        animate();
-      };
-      u.onboundary = () => {
-        energyRef.current = 1;
-      };
-      const finish = () => {
-        speakingRef.current = Math.max(0, speakingRef.current - 1);
-        if (speakingRef.current === 0) setAvatarState((s) => (s === "talking" ? "idle" : s));
-      };
-      u.onend = finish;
-      u.onerror = finish;
-      speakingRef.current += 1;
-      window.speechSynthesis.speak(u);
-    },
+  // Browser voice: the fallback when ElevenLabs isn't configured or a clip fails.
+  const speakBrowser = useCallback(
+    (text: string) =>
+      new Promise<void>((resolve) => {
+        if (!voiceOnRef.current || !("speechSynthesis" in window) || !text.trim()) return resolve();
+        const u = new SpeechSynthesisUtterance(text);
+        if (voiceRef.current) u.voice = voiceRef.current;
+        u.rate = 0.95;
+        u.pitch = 1.05;
+        u.onstart = () => {
+          energyRef.current = 1;
+          setAvatarState("talking");
+          animate();
+        };
+        u.onboundary = () => {
+          energyRef.current = 1;
+        };
+        const finish = () => {
+          speakingRef.current = Math.max(0, speakingRef.current - 1);
+          if (speakingRef.current === 0) setAvatarState((s) => (s === "talking" ? "idle" : s));
+          resolve();
+        };
+        u.onend = finish;
+        u.onerror = finish;
+        speakingRef.current += 1;
+        window.speechSynthesis.speak(u);
+      }),
     [animate],
   );
+
+  // ElevenLabs voice (via /api/tts), created on first use.
+  const getWren = useCallback(() => {
+    wrenRef.current ??= new WrenVoice({
+      onStart: () => {
+        setAvatarState("talking");
+        animate();
+      },
+      onIdle: () => setAvatarState((s) => (s === "talking" ? "idle" : s)),
+      fallback: speakBrowser,
+    });
+    return wrenRef.current;
+  }, [animate, speakBrowser]);
+
+  const speak = useCallback(
+    (text: string) => {
+      if (voiceOnRef.current && text.trim()) getWren().enqueue(text);
+    },
+    [getWren],
+  );
+
+  const stopSpeaking = useCallback(() => {
+    wrenRef.current?.cancel();
+    if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+    speakingRef.current = 0;
+  }, []);
 
   // ---------- send a message ----------
   const send = useCallback(
@@ -168,8 +213,7 @@ export default function Guide({ mode }: { mode: Mode }) {
       const content = text.trim();
       if (!content || busy) return;
       if (isCrisis(content)) setCrisis(true);
-      if ("speechSynthesis" in window) window.speechSynthesis.cancel();
-      speakingRef.current = 0;
+      stopSpeaking();
 
       const next: Msg[] = [...messages, { role: "user", content }];
       setMessages([...next, { role: "assistant", content: "" }]);
@@ -219,7 +263,7 @@ export default function Guide({ mode }: { mode: Mode }) {
         setAvatarState((s) => (s === "thinking" ? "idle" : s));
       }
     },
-    [busy, messages, mode, done, speak],
+    [busy, messages, mode, done, speak, stopSpeaking],
   );
 
   // ---------- microphone ----------
@@ -231,8 +275,7 @@ export default function Guide({ mode }: { mode: Mode }) {
     const w = window as unknown as { SpeechRecognition?: new () => SR; webkitSpeechRecognition?: new () => SR };
     const Ctor = w.SpeechRecognition || w.webkitSpeechRecognition;
     if (!Ctor) return;
-    if ("speechSynthesis" in window) window.speechSynthesis.cancel();
-    speakingRef.current = 0;
+    stopSpeaking();
     const rec = new Ctor();
     rec.lang = "en-US";
     rec.interimResults = true;
@@ -264,6 +307,7 @@ export default function Guide({ mode }: { mode: Mode }) {
 
   const start = () => {
     setStarted(true);
+    getWren().unlock(); // inside the tap, so phones allow Wren's audio later
     speak(GREETING[mode]);
   };
 
