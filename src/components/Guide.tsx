@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Avatar, { AvatarState } from "./Avatar";
 import { Mode, journeyFor } from "@/lib/content";
+import { isCrisis } from "@/lib/safety";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
@@ -166,7 +167,7 @@ export default function Guide({ mode }: { mode: Mode }) {
     async (text: string) => {
       const content = text.trim();
       if (!content || busy) return;
-      if (CRISIS_RE.test(content)) setCrisis(true);
+      if (isCrisis(content)) setCrisis(true);
       if ("speechSynthesis" in window) window.speechSynthesis.cancel();
       speakingRef.current = 0;
 

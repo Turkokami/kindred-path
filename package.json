@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test:unit": "node --no-warnings --test tests/guardrails/safety.test.mjs",
+    "test:guardrails": "node tests/guardrails/run.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.131.0",

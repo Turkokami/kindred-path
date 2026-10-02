@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { buildSystemPrompt } from "@/lib/systemPrompt";
+import { maskPII } from "@/lib/safety";
 import type { Mode } from "@/lib/content";
 
 export const runtime = "nodejs";
@@ -22,7 +23,7 @@ export async function POST(req: Request) {
   const messages = (body.messages ?? [])
     .filter((m) => (m.role === "user" || m.role === "assistant") && typeof m.content === "string" && m.content.trim())
     .slice(-30)
-    .map((m) => ({ role: m.role, content: m.content.slice(0, 4000) }));
+    .map((m) => ({ role: m.role, content: maskPII(m.content.slice(0, 4000)) }));
 
   // The API requires the first message to come from the user.
   while (messages.length && messages[0].role !== "user") messages.shift();
