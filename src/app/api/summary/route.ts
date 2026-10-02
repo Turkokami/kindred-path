@@ -90,7 +90,8 @@ export async function POST(req: Request) {
     summary.nextSteps = summary.nextSteps.map((s) => ({ step: mask(s.step), why: mask(s.why) }));
     summary.documents = summary.documents.map(mask);
     summary.crisis ||= messages.some((m) => m.role === "user" && isCrisis(m.content));
-    summary.completed = Array.from(new Set([...completedTitles, ...summary.completed]));
+    // The checklist is the source of truth for finished steps; the model only fills in when it is empty.
+    if (completedTitles.length) summary.completed = completedTitles;
 
     return json({ summary });
   } catch (err) {
