@@ -1,10 +1,10 @@
-// Builds the personalized end-of-conversation summary. Claude fills a fixed JSON shape via a
-// forced tool call; nothing is stored. The PDF itself is made in the person's browser.
+// Builds the personalized end-of-conversation summary. Claude fills a fixed JSON shape via
+// structured output; nothing is stored. The PDF itself is made in the person's browser.
 
 import Anthropic from "@anthropic-ai/sdk";
 import { journeyAsText, journeyFor, type Mode } from "@/lib/content";
 import { isCrisis, maskPII } from "@/lib/safety";
-import { SUMMARY_TOOL, cleanSummary, type Summary } from "@/lib/summary";
+import { SUMMARY_SCHEMA, cleanSummary, type Summary } from "@/lib/summary";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -21,7 +21,7 @@ function systemPrompt(mode: Mode, completedTitles: string[]) {
 
 ${mode === "navigate" ? "They have recently lost someone. Write warmly and simply." : "They are planning ahead to protect their family."}
 
-Fill in the save_summary tool using only what they actually said, plus the general checklist below. Rules:
+Fill in the summary using only what they actually said, plus the general checklist below. Rules:
 - General information only. Never tell them what they "should" do about a legal choice (trusts, contesting a will, how to divide assets). Phrase steps as actions to take or questions to ask a professional.
 - Never draft or include wording for wills, trusts, deeds, powers of attorney, or court forms.
 - Never name, recommend, or rank a specific lawyer, firm, funeral home, or business. Name the type of professional only.
@@ -67,18 +67,22 @@ export async function POST(req: Request) {
 
   try {
     const client = new Anthropic();
+    // Structured output guarantees the JSON shape (forced tool use isn't available on this model).
     const res = await client.messages.create({
       model: MODEL,
-      max_tokens: 2000,
+      max_tokens: 8000,
       system: systemPrompt(mode, completedTitles),
-      tools: [SUMMARY_TOOL],
-      tool_choice: { type: "tool", name: SUMMARY_TOOL.name },
+      output_config: { effort: "medium", format: { type: "json_schema", schema: SUMMARY_SCHEMA } },
       messages: [{ role: "user", content: `Here is our conversation. Please build my summary.\n\n${transcript}` }],
     });
-    const call = res.content.find((b) => b.type === "tool_use");
-    if (!call || call.type !== "tool_use") return json({ error: "summary_failed" }, 502);
+    if (res.stop_reason === "refusal" || res.stop_reason === "max_tokens") {
+      console.error("summary error: stop_reason", res.stop_reason);
+      return json({ error: "summary_failed" }, 502);
+    }
+    const text = res.content.find((b) => b.type === "text");
+    if (!text || text.type !== "text") return json({ error: "summary_failed" }, 502);
 
-    const summary: Summary = cleanSummary(call.input);
+    const summary: Summary = cleanSummary(JSON.parse(text.text));
     // Belt and braces: mask anything sensitive the model let through, and keep the 988 note
     // whenever the person's own words matched the crisis check.
     const mask = (s: string) => maskPII(s);

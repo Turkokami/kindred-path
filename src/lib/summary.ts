@@ -18,12 +18,10 @@ export const SUMMARY_DISCLAIMER =
 export const VETTING_NOTE =
   "Kindred Path does not recommend specific providers. Check any professional's license and fees before you hire them.";
 
-/** JSON schema handed to Claude as a forced tool call, so the reply always has this shape. */
-export const SUMMARY_TOOL = {
-  name: "save_summary",
-  description: "Save the person's personalized summary.",
-  input_schema: {
-    type: "object" as const,
+/** JSON schema for structured output (output_config.format), so the reply always has this shape. */
+export const SUMMARY_SCHEMA = {
+    type: "object",
+    additionalProperties: false,
     properties: {
       title: { type: "string", description: "Short title, e.g. 'Your next steps after losing your dad' or 'Your planning checklist'." },
       situation: {
@@ -35,6 +33,7 @@ export const SUMMARY_TOOL = {
         type: "array",
         items: {
           type: "object",
+          additionalProperties: false,
           properties: { step: { type: "string" }, why: { type: "string", description: "One plain sentence." } },
           required: ["step", "why"],
         },
@@ -45,6 +44,7 @@ export const SUMMARY_TOOL = {
         type: "array",
         items: {
           type: "object",
+          additionalProperties: false,
           properties: {
             type: { type: "string", description: "A type of professional, e.g. 'Probate attorney'. Never a named person or firm." },
             why: { type: "string" },
@@ -57,6 +57,7 @@ export const SUMMARY_TOOL = {
         type: "array",
         items: {
           type: "object",
+          additionalProperties: false,
           properties: {
             item: { type: "string" },
             timing: { type: "string", description: "General timing, e.g. 'Usually within 9 months of the death'. Add 'confirm for your state' where rules vary." },
@@ -69,7 +70,6 @@ export const SUMMARY_TOOL = {
       crisis: { type: "boolean", description: "True if the person expressed thoughts of suicide, self-harm, or being in crisis." },
     },
     required: ["title", "situation", "nextSteps", "completed", "professionals", "deadlines", "documents", "crisis"],
-  },
 };
 
 const str = (v: unknown, max = 400) => (typeof v === "string" ? v.trim().slice(0, max) : "");
