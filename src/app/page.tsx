@@ -6,9 +6,14 @@ export default function Home() {
     <main className="mx-auto max-w-6xl px-4 sm:px-6">
       <header className="flex items-center justify-between py-5">
         <span className="font-serif text-2xl text-ink">Kindred Path</span>
-        <Link href="/guide?mode=prepare" className="text-sm text-muted hover:text-ink">
-          Plan ahead
-        </Link>
+        <nav className="flex gap-4">
+          <Link href="/find" className="text-sm text-muted hover:text-ink">
+            Find a professional
+          </Link>
+          <Link href="/guide?mode=prepare" className="text-sm text-muted hover:text-ink">
+            Plan ahead
+          </Link>
+        </nav>
       </header>
 
       <section className="grid items-center gap-10 py-10 md:grid-cols-[1.2fr_1fr] md:py-16">

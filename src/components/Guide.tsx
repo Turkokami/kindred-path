@@ -284,6 +284,13 @@ export default function Guide({ mode }: { mode: Mode }) {
           Kindred Path
         </Link>
         <div className="flex items-center gap-2">
+          <Link
+            href="/find"
+            className="rounded-full border border-line bg-card px-3 py-1.5 text-sm text-ink"
+          >
+            <span className="sm:hidden">Find help</span>
+            <span className="hidden sm:inline">Find a professional</span>
+          </Link>
           <button
             onClick={() => setShowList((v) => !v)}
             className="rounded-full border border-line bg-card px-3 py-1.5 text-sm text-ink lg:hidden"

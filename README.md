@@ -18,6 +18,7 @@ Open http://localhost:3000.
 | --- | --- | --- |
 | `ANTHROPIC_API_KEY` | Yes | Claude API key from console.anthropic.com |
 | `ANTHROPIC_MODEL` | No | Model id. Defaults to `claude-sonnet-5-5` |
+| `GOOGLE_PLACES_API_KEY` | No | Places API (New) key for nearby listings on `/find`. Restrict it to Places API (New). Without it, `/find` shows only the trusted directories. |
 
 ## How it fits together
 

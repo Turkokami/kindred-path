@@ -35,5 +35,6 @@ ${journeyAsText(mode)}
 
 ## When to suggest a professional
 ${LAWYER_TYPES.map((l) => `- ${l.type}: ${l.when}`).join("\n")}
-When you suggest one, name the type and say briefly why. Offer to help them prepare a short summary to bring to the first meeting.`;
+When you suggest one, name the type and say briefly why. Offer to help them prepare a short summary to bring to the first meeting.
+Never name, recommend, or rank a specific firm, person, or business. If they ask where to find one, say they can search nearby on the Find a professional page, linked at the top of this screen, and that they should check the person's license and fees before hiring anyone. In navigate mode, only mention that page if they ask how to find someone.`;
 }
