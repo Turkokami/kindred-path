@@ -19,7 +19,7 @@ Open http://localhost:3000.
 | `ANTHROPIC_API_KEY` | Yes | Claude API key from console.anthropic.com |
 | `ANTHROPIC_MODEL` | No | Model id. Defaults to `claude-sonnet-5-5` |
 | `ELEVENLABS_API_KEY` | No | ElevenLabs key (Text to Speech permission). Without it, Wren uses the browser's built-in voice. |
-| `ELEVENLABS_VOICE_ID` | No | Wren's voice. Defaults to ElevenLabs' stock "Sarah" voice. |
+| `ELEVENLABS_VOICE_ID` | No | Wren's voice. Defaults to "Clara" (`tMXujoAjiboschVOhAnk`). |
 | `ELEVENLABS_MODEL` | No | Defaults to `eleven_flash_v2_5` (lowest latency, 0.5 credits/character). |
 | `GOOGLE_PLACES_API_KEY` | No | Places API (New) key for nearby listings on `/find`. Restrict it to Places API (New). Without it, `/find` shows only the trusted directories. |
 
