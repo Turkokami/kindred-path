@@ -6,8 +6,8 @@ export const runtime = "nodejs";
 export const maxDuration = 30;
 
 const MODEL = process.env.ELEVENLABS_MODEL || "eleven_flash_v2_5";
-// Wren's voice: "Clara" in Kristofer's ElevenLabs account. ELEVENLABS_VOICE_ID overrides it.
-const DEFAULT_VOICE = "tMXujoAjiboschVOhAnk";
+// Wren's voice: "Jessica" in Kristofer's ElevenLabs account (was Clara, tMXujoAjiboschVOhAnk). ELEVENLABS_VOICE_ID overrides it.
+const DEFAULT_VOICE = "r1KmysJdVYZjJCm4mL3b";
 const MAX_CHARS = 600;
 
 const json = (body: unknown, status = 200) =>
