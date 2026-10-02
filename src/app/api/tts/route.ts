@@ -14,9 +14,14 @@ const json = (body: unknown, status = 200) =>
   Response.json(body, { status, headers: { "Cache-Control": "no-store" } });
 
 export async function POST(req: Request) {
-  const key = process.env.ELEVENLABS_API_KEY;
-  const voice = process.env.ELEVENLABS_VOICE_ID || DEFAULT_VOICE;
+  const key = process.env.ELEVENLABS_API_KEY?.trim();
+  const voice = process.env.ELEVENLABS_VOICE_ID?.trim() || DEFAULT_VOICE;
   if (!key) return json({ error: "not_configured" }, 503);
+  if (/[^\x21-\x7e]/.test(key)) {
+    // Usually a copied "sk_abc…" preview instead of the full key.
+    console.error("tts error: ELEVENLABS_API_KEY contains a non-ASCII character (truncated copy?). Re-paste the full key.");
+    return json({ error: "not_configured" }, 503);
+  }
 
   // Only our own pages may spend ElevenLabs credits.
   const origin = req.headers.get("origin");
