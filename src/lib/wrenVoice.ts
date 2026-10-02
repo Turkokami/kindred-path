@@ -72,8 +72,14 @@ export class WrenVoice {
   private controller = new AbortController();
   private lastText = "";
   private stopPlayback: (() => void) | null = null;
+  private voice: string | undefined;
 
   constructor(private hooks: WrenVoiceHooks) {}
+
+  /** Which listed voice to request (see src/lib/voices.ts). Takes effect for the next sentence. */
+  setVoice(key: string) {
+    this.voice = key;
+  }
 
   /** Call from a tap (the Start button) so mobile browsers allow playback later. */
   unlock() {
@@ -129,7 +135,7 @@ export class WrenVoice {
       const res = await fetch("/api/tts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text, previous_text: previous }),
+        body: JSON.stringify({ text, previous_text: previous, voice: this.voice }),
         signal: this.controller.signal,
       });
       if (res.status === 503) {

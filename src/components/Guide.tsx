@@ -6,6 +6,9 @@ import Avatar, { AvatarState } from "./Avatar";
 import { Mode, journeyFor } from "@/lib/content";
 import { isCrisis } from "@/lib/safety";
 import { WrenVoice } from "@/lib/wrenVoice";
+import { DEFAULT_VOICE_KEY, VOICES, voiceByKey } from "@/lib/voices";
+
+const VOICE_SAMPLE = "Hi, I'm Wren. This is how I'll sound.";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
@@ -71,6 +74,7 @@ export default function Guide({ mode }: { mode: Mode }) {
   const [avatarState, setAvatarState] = useState<AvatarState>("idle");
   const [mouth, setMouth] = useState(0);
   const [voiceOn, setVoiceOn] = useState(true);
+  const [voiceKey, setVoiceKey] = useState(DEFAULT_VOICE_KEY);
   const [listening, setListening] = useState(false);
   const [micSupported, setMicSupported] = useState(false);
   const [crisis, setCrisis] = useState(false);
@@ -207,6 +211,38 @@ export default function Guide({ mode }: { mode: Mode }) {
     speakingRef.current = 0;
   }, []);
 
+  // Restore the voice picked on this device (or "off").
+  useEffect(() => {
+    let saved: string | null = null;
+    try {
+      saved = localStorage.getItem("kp-voice");
+    } catch {}
+    if (saved === "off") setVoiceOn(false);
+    const key = voiceByKey(saved)?.key ?? DEFAULT_VOICE_KEY;
+    setVoiceKey(key);
+    getWren().setVoice(key);
+  }, [getWren]);
+
+  // Switching voices plays a short sample. Runs inside the change event, so phones allow the audio.
+  const chooseVoice = (value: string) => {
+    try {
+      localStorage.setItem("kp-voice", value);
+    } catch {}
+    stopSpeaking();
+    if (value === "off") {
+      setVoiceOn(false);
+      return;
+    }
+    setVoiceKey(value);
+    getWren().setVoice(value);
+    voiceOnRef.current = true;
+    setVoiceOn(true);
+    if (started) {
+      getWren().unlock();
+      speak(VOICE_SAMPLE);
+    }
+  };
+
   // ---------- send a message ----------
   const send = useCallback(
     async (text: string) => {
@@ -341,13 +377,22 @@ export default function Guide({ mode }: { mode: Mode }) {
           >
             Checklist {doneCount}/{totalSteps}
           </button>
-          <button
-            onClick={() => setVoiceOn((v) => !v)}
+          <label className="sr-only" htmlFor="wren-voice">
+            Wren&apos;s voice
+          </label>
+          <select
+            id="wren-voice"
+            value={voiceOn ? voiceKey : "off"}
+            onChange={(e) => chooseVoice(e.target.value)}
             className="rounded-full border border-line bg-card px-3 py-1.5 text-sm text-ink"
-            aria-pressed={voiceOn}
           >
-            {voiceOn ? "Voice on" : "Voice off"}
-          </button>
+            {VOICES.map((v) => (
+              <option key={v.key} value={v.key}>
+                Voice: {v.label}
+              </option>
+            ))}
+            <option value="off">Voice off</option>
+          </select>
         </div>
       </header>
 

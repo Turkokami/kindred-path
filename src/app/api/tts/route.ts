@@ -2,12 +2,12 @@
 // for lip sync. The key stays on the server. Returns 503 when not configured, and the client
 // falls back to the browser's built-in voice.
 
+import { DEFAULT_VOICE_KEY, voiceByKey } from "@/lib/voices";
+
 export const runtime = "nodejs";
 export const maxDuration = 30;
 
 const MODEL = process.env.ELEVENLABS_MODEL || "eleven_flash_v2_5";
-// Wren's voice: "Jane" in Kristofer's ElevenLabs account (tried before: Clara tMXujoAjiboschVOhAnk, Jessica r1KmysJdVYZjJCm4mL3b). ELEVENLABS_VOICE_ID overrides it.
-const DEFAULT_VOICE = "RILOU7YmBhvwJGDGjNmP";
 const MAX_CHARS = 600;
 
 const json = (body: unknown, status = 200) =>
@@ -15,7 +15,6 @@ const json = (body: unknown, status = 200) =>
 
 export async function POST(req: Request) {
   const key = process.env.ELEVENLABS_API_KEY?.trim();
-  const voice = process.env.ELEVENLABS_VOICE_ID?.trim() || DEFAULT_VOICE;
   if (!key) return json({ error: "not_configured" }, 503);
   if (/[^\x21-\x7e]/.test(key)) {
     // Usually a copied "sk_abc…" preview instead of the full key.
@@ -27,7 +26,7 @@ export async function POST(req: Request) {
   const origin = req.headers.get("origin");
   if (origin && new URL(origin).host !== req.headers.get("host")) return json({ error: "forbidden" }, 403);
 
-  let body: { text?: unknown; previous_text?: unknown };
+  let body: { text?: unknown; previous_text?: unknown; voice?: unknown };
   try {
     body = await req.json();
   } catch {
@@ -36,6 +35,11 @@ export async function POST(req: Request) {
   const text = typeof body.text === "string" ? body.text.trim() : "";
   if (!text || text.length > MAX_CHARS) return json({ error: "bad_request" }, 400);
   const previous = typeof body.previous_text === "string" ? body.previous_text.slice(-MAX_CHARS) : undefined;
+  // A listed voice the person picked, else ELEVENLABS_VOICE_ID, else the default.
+  const voice =
+    voiceByKey(typeof body.voice === "string" ? body.voice : null)?.elevenLabsId ||
+    process.env.ELEVENLABS_VOICE_ID?.trim() ||
+    voiceByKey(DEFAULT_VOICE_KEY)!.elevenLabsId;
 
   try {
     const res = await fetch(
