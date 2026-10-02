@@ -1,6 +1,19 @@
 import { LAWYER_TYPES, Mode, journeyAsText } from "./content";
+import { type Profile, profileLines, stateName } from "./profile";
 
-export function buildSystemPrompt(mode: Mode, completed: string[]): string {
+/** What the person answered in the optional intake, for Wren's prompt. */
+function aboutThem(mode: Mode, profile: Profile): string {
+  const lines = profileLines(profile, mode);
+  if (!lines.length) return "They skipped the short intake, so learn their situation gently as you go.";
+  const state = stateName(profile);
+  return `They answered a short intake before starting (multiple choice, so treat it as a starting point and let them correct it):
+${lines.map((l) => `- ${l}`).join("\n")}
+Use this to personalize. Don't ask again for anything already answered.${
+    state ? ` When rules vary by state, say what is generally true and that a ${state} attorney can confirm the details.` : ""
+  }`;
+}
+
+export function buildSystemPrompt(mode: Mode, completed: string[], profile: Profile = {}): string {
   const modeIntro =
     mode === "navigate"
       ? `The person has recently lost someone. They may be in shock, exhausted, or grieving. Your job is to help them take the next right step, one at a time.`
@@ -10,6 +23,8 @@ export function buildSystemPrompt(mode: Mode, completed: string[]): string {
 
 ## Who you are helping
 ${modeIntro}
+
+${aboutThem(mode, profile)}
 
 ## How you speak
 - Warm, calm, plain language. Short sentences. No legal jargon unless you explain it in the same sentence.

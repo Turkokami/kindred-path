@@ -8,6 +8,8 @@ import { isCrisis } from "@/lib/safety";
 import { WrenVoice } from "@/lib/wrenVoice";
 import { DEFAULT_VOICE_KEY, VOICES, voiceByKey } from "@/lib/voices";
 import SummaryPanel from "./SummaryPanel";
+import IntakeForm from "./IntakeForm";
+import { type Profile, sanitizeProfile } from "@/lib/profile";
 
 const VOICE_SAMPLE = "Hi, I'm Wren. This is how I'll sound.";
 
@@ -55,6 +57,21 @@ function saveDone(mode: Mode, ids: string[]) {
   }
 }
 
+function loadProfile(mode: Mode): Profile {
+  try {
+    return sanitizeProfile(JSON.parse(localStorage.getItem(`kp-profile-${mode}`) ?? "{}"), mode);
+  } catch {
+    return {};
+  }
+}
+function saveProfile(mode: Mode, p: Profile) {
+  try {
+    localStorage.setItem(`kp-profile-${mode}`, JSON.stringify(p));
+  } catch {
+    /* ignore */
+  }
+}
+
 // ---------- speech recognition typing (browser API) ----------
 type SR = {
   lang: string;
@@ -82,6 +99,11 @@ export default function Guide({ mode }: { mode: Mode }) {
   const [done, setDone] = useState<string[]>([]);
   const [showList, setShowList] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
+  const [profile, setProfile] = useState<Profile>({});
+  const updateProfile = (p: Profile) => {
+    setProfile(p);
+    saveProfile(mode, p);
+  };
 
   const speakingRef = useRef(0); // utterances queued/playing
   const energyRef = useRef(0);
@@ -94,6 +116,7 @@ export default function Guide({ mode }: { mode: Mode }) {
 
   useEffect(() => {
     setDone(loadDone(mode));
+    setProfile(loadProfile(mode));
     const w = window as unknown as { SpeechRecognition?: unknown; webkitSpeechRecognition?: unknown };
     setMicSupported(Boolean(w.SpeechRecognition || w.webkitSpeechRecognition));
 
@@ -278,7 +301,7 @@ export default function Guide({ mode }: { mode: Mode }) {
         const res = await fetch("/api/chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ messages: next, mode, completed: done }),
+          body: JSON.stringify({ messages: next, mode, completed: done, profile }),
         });
         if (!res.body) throw new Error("no body");
         const reader = res.body.getReader();
@@ -301,7 +324,7 @@ export default function Guide({ mode }: { mode: Mode }) {
         setAvatarState((s) => (s === "thinking" ? "idle" : s));
       }
     },
-    [busy, messages, mode, done, speak, stopSpeaking],
+    [busy, messages, mode, done, profile, speak, stopSpeaking],
   );
 
   // ---------- microphone ----------
@@ -432,6 +455,7 @@ export default function Guide({ mode }: { mode: Mode }) {
                   ? "Wren will walk with you through the next steps after a loss. You can talk out loud or type."
                   : "Wren will help you understand wills, trusts, and the documents your family will need. You can talk out loud or type."}
               </p>
+              <IntakeForm mode={mode} profile={profile} onChange={updateProfile} />
               <button
                 onClick={start}
                 className="rounded-full bg-sage px-6 py-3 font-semibold text-white shadow-sm hover:opacity-90"
@@ -529,6 +553,7 @@ export default function Guide({ mode }: { mode: Mode }) {
           messages={messages}
           mode={mode}
           completed={done}
+          profile={profile}
         />
 
         {/* Checklist */}

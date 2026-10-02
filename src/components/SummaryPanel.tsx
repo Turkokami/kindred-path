@@ -3,9 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 import { SUMMARY_DISCLAIMER, VETTING_NOTE, type Summary } from "@/lib/summary";
 import type { Mode } from "@/lib/content";
+import type { Profile } from "@/lib/profile";
 
 type Msg = { role: "user" | "assistant"; content: string };
-type Props = { open: boolean; onClose: () => void; messages: Msg[]; mode: Mode; completed: string[] };
+type Props = { open: boolean; onClose: () => void; messages: Msg[]; mode: Mode; completed: string[]; profile: Profile };
 
 const blobToBase64 = (b: Blob) =>
   new Promise<string>((resolve, reject) => {
@@ -41,7 +42,7 @@ function EditableList({ items, onChange, label }: { items: string[]; onChange: (
   );
 }
 
-export default function SummaryPanel({ open, onClose, messages, mode, completed }: Props) {
+export default function SummaryPanel({ open, onClose, messages, mode, completed, profile }: Props) {
   const [status, setStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
   const [summary, setSummary] = useState<Summary | null>(null);
   const [emailEnabled, setEmailEnabled] = useState(false);
@@ -65,7 +66,7 @@ export default function SummaryPanel({ open, onClose, messages, mode, completed 
     fetch("/api/summary", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ messages, mode, completed }),
+      body: JSON.stringify({ messages, mode, completed, profile }),
     })
       .then(async (r) => {
         const d = await r.json();

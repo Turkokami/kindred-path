@@ -5,6 +5,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { journeyAsText, journeyFor, type Mode } from "@/lib/content";
 import { isCrisis, maskPII } from "@/lib/safety";
 import { SUMMARY_SCHEMA, cleanSummary, type Summary } from "@/lib/summary";
+import { type Profile, profileLines, sanitizeProfile } from "@/lib/profile";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -16,7 +17,8 @@ const MODEL = process.env.ANTHROPIC_MODEL || "claude-sonnet-5-5";
 const json = (body: unknown, status = 200) =>
   Response.json(body, { status, headers: { "Cache-Control": "no-store" } });
 
-function systemPrompt(mode: Mode, completedTitles: string[]) {
+function systemPrompt(mode: Mode, completedTitles: string[], profile: Profile) {
+  const intake = profileLines(profile, mode);
   return `You are Wren, the AI guide for Kindred Path. The person has finished a conversation with you and wants a personal summary they can save as a PDF and bring to a professional.
 
 ${mode === "navigate" ? "They have recently lost someone. Write warmly and simply." : "They are planning ahead to protect their family."}
@@ -30,6 +32,9 @@ Fill in the summary using only what they actually said, plus the general checkli
 - Plain language, short sentences, no jargon without a quick explanation.
 - If they expressed thoughts of suicide or self-harm, set crisis to true.
 
+Intake answers they gave before the conversation (include the relevant ones in "situation", and let the conversation override them):
+${intake.length ? intake.map((l) => `- ${l}`).join("\n") : "- (skipped)"}
+
 Checklist steps already marked done: ${completedTitles.length ? completedTitles.join("; ") : "none"}.
 
 The general checklist for reference:
@@ -40,13 +45,14 @@ export async function POST(req: Request) {
   const origin = req.headers.get("origin");
   if (origin && new URL(origin).host !== req.headers.get("host")) return json({ error: "forbidden" }, 403);
 
-  let body: { messages?: ChatMessage[]; mode?: Mode; completed?: string[] };
+  let body: { messages?: ChatMessage[]; mode?: Mode; completed?: string[]; profile?: unknown };
   try {
     body = await req.json();
   } catch {
     return json({ error: "bad_request" }, 400);
   }
   const mode: Mode = body.mode === "prepare" ? "prepare" : "navigate";
+  const profile = sanitizeProfile(body.profile, mode);
   const messages = (body.messages ?? [])
     .filter((m) => (m.role === "user" || m.role === "assistant") && typeof m.content === "string" && m.content.trim())
     .slice(-40)
@@ -71,7 +77,7 @@ export async function POST(req: Request) {
     const res = await client.messages.create({
       model: MODEL,
       max_tokens: 8000,
-      system: systemPrompt(mode, completedTitles),
+      system: systemPrompt(mode, completedTitles, profile),
       output_config: { effort: "medium", format: { type: "json_schema", schema: SUMMARY_SCHEMA } },
       messages: [{ role: "user", content: `Here is our conversation. Please build my summary.\n\n${transcript}` }],
     });

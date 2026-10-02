@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { buildSystemPrompt } from "@/lib/systemPrompt";
 import { maskPII } from "@/lib/safety";
+import { sanitizeProfile } from "@/lib/profile";
 import type { Mode } from "@/lib/content";
 
 export const runtime = "nodejs";
@@ -11,7 +12,7 @@ type ChatMessage = { role: "user" | "assistant"; content: string };
 const MODEL = process.env.ANTHROPIC_MODEL || "claude-sonnet-5-5";
 
 export async function POST(req: Request) {
-  let body: { messages?: ChatMessage[]; mode?: Mode; completed?: string[] };
+  let body: { messages?: ChatMessage[]; mode?: Mode; completed?: string[]; profile?: unknown };
   try {
     body = await req.json();
   } catch {
@@ -20,6 +21,7 @@ export async function POST(req: Request) {
 
   const mode: Mode = body.mode === "prepare" ? "prepare" : "navigate";
   const completed = Array.isArray(body.completed) ? body.completed.slice(0, 100).map(String) : [];
+  const profile = sanitizeProfile(body.profile, mode);
   const messages = (body.messages ?? [])
     .filter((m) => (m.role === "user" || m.role === "assistant") && typeof m.content === "string" && m.content.trim())
     .slice(-30)
@@ -45,7 +47,7 @@ export async function POST(req: Request) {
         const s = client.messages.stream({
           model: MODEL,
           max_tokens: 600,
-          system: buildSystemPrompt(mode, completed),
+          system: buildSystemPrompt(mode, completed, profile),
           messages,
         });
         s.on("text", (t) => controller.enqueue(encoder.encode(t)));
