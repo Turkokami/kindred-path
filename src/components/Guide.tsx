@@ -600,6 +600,16 @@ export default function Guide({ mode }: { mode: Mode }) {
               </div>
             ))}
           </div>
+          {mode === "navigate" && (
+            <Link
+              href="/benefits"
+              target="_blank"
+              className="mt-5 block rounded-2xl border border-sage bg-sage-soft p-3 text-sm text-ink hover:border-ink"
+            >
+              <strong>Money and benefits you may be owed</strong>
+              <span className="block text-muted">Free official searches for survivor benefits, life insurance, and more.</span>
+            </Link>
+          )}
         </aside>
       </div>
 

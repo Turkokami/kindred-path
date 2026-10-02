@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### Added
+- "Money and benefits you may be owed" page (`/benefits`): free official searches (SSA survivor benefits, NAIC life insurance locator, MissingMoney, VA burial benefits, PBGC pensions, Treasury Hunt) plus an employer checklist and a warning about paid "finders". Linked under the after-a-loss checklist; Wren may mention it.
 - Optional 30-second intake before the conversation (state, relationship, timing, will, home, executor; or for planning: state, partner, kids, home, business, existing documents, special needs). Multiple choice only, saved on the device (`kp-profile-<mode>`), re-validated on the server, and used by Wren and the summary. Unit tests cover the validation.
 - "Get my summary (PDF)": after a conversation, Wren builds a personal summary (situation, ordered next steps, deadlines, who to talk to with questions to ask, documents to gather, steps done) via `/api/summary` (forced tool call, PII masked, nothing stored). The person reviews and edits it, then downloads a PDF generated in their browser (jsPDF). Optional email delivery via Resend (`/api/summary/email`) stays off until `RESEND_API_KEY` and `SUMMARY_EMAIL_FROM` are set. Wren offers the summary once at a natural stopping point.
 - Voice menu in the chat header: Jessica (default), Jane, Clara, or Voice off. Switching plays a short sample; the choice is remembered on that device. The server only accepts voices listed in `src/lib/voices.ts`.
