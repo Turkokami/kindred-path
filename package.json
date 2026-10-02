@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "test:unit": "node --no-warnings --test tests/guardrails/safety.test.mjs",
-    "test:guardrails": "node tests/guardrails/run.mjs"
+    "test:guardrails": "node tests/guardrails/run.mjs",
+    "test:guardrails:rescore": "node tests/guardrails/run.mjs --rescore"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.131.0",

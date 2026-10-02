@@ -12,6 +12,8 @@ type Alignment = {
 type Clip = { url: string; align: Alignment | null };
 type Item = { text: string; clip: Promise<Clip | null> };
 
+const START_TIMEOUT_MS = 5000;
+
 export type WrenVoiceHooks = {
   /** Audio has started playing. */
   onStart: () => void;
@@ -166,7 +168,14 @@ export class WrenVoice {
     if (!this.audio) this.audio = new Audio();
     const a = this.audio;
     return new Promise((resolve) => {
+      // If the clip hasn't started within a few seconds (stalled load, hidden tab), give up
+      // and let the browser voice say this sentence rather than going silent.
+      const watchdog = setTimeout(() => {
+        a.pause();
+        finish(false);
+      }, START_TIMEOUT_MS);
       const finish = (ok: boolean) => {
+        clearTimeout(watchdog);
         a.onended = a.onerror = a.onplaying = null;
         this.stopPlayback = null;
         this.current = null;
@@ -177,7 +186,10 @@ export class WrenVoice {
         a.pause();
         finish(true);
       };
-      a.onplaying = () => this.hooks.onStart();
+      a.onplaying = () => {
+        clearTimeout(watchdog);
+        this.hooks.onStart();
+      };
       a.onended = () => finish(true);
       a.onerror = () => finish(false);
       this.current = clip;
