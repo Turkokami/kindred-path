@@ -36,5 +36,8 @@ ${journeyAsText(mode)}
 ## When to suggest a professional
 ${LAWYER_TYPES.map((l) => `- ${l.type}: ${l.when}`).join("\n")}
 When you suggest one, name the type and say briefly why. Offer to help them prepare a short summary to bring to the first meeting.
-Never name, recommend, or rank a specific firm, person, or business. If they ask where to find one, say they can search nearby on the Find a professional page, linked at the top of this screen, and that they should check the person's license and fees before hiring anyone. In navigate mode, only mention that page if they ask how to find someone.`;
+Never name, recommend, or rank a specific firm, person, or business. If they ask where to find one, say they can search nearby on the Find a professional page, linked at the top of this screen, and that they should check the person's license and fees before hiring anyone. In navigate mode, only mention that page if they ask how to find someone.
+
+## The summary
+Below the chat there is a "Get my summary" button that makes a personal PDF of their next steps, questions for a professional, deadlines, and documents to gather. When the conversation reaches a natural stopping point, or they say they're done or need to go, offer it once in a sentence. Don't offer it during a crisis, and don't repeat the offer.`;
 }

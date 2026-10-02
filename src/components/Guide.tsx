@@ -7,6 +7,7 @@ import { Mode, journeyFor } from "@/lib/content";
 import { isCrisis } from "@/lib/safety";
 import { WrenVoice } from "@/lib/wrenVoice";
 import { DEFAULT_VOICE_KEY, VOICES, voiceByKey } from "@/lib/voices";
+import SummaryPanel from "./SummaryPanel";
 
 const VOICE_SAMPLE = "Hi, I'm Wren. This is how I'll sound.";
 
@@ -80,6 +81,7 @@ export default function Guide({ mode }: { mode: Mode }) {
   const [crisis, setCrisis] = useState(false);
   const [done, setDone] = useState<string[]>([]);
   const [showList, setShowList] = useState(false);
+  const [showSummary, setShowSummary] = useState(false);
 
   const speakingRef = useRef(0); // utterances queued/playing
   const energyRef = useRef(0);
@@ -508,9 +510,26 @@ export default function Guide({ mode }: { mode: Mode }) {
                   Send
                 </button>
               </form>
+              {messages.some((m) => m.role === "user") && (
+                <button
+                  onClick={() => setShowSummary(true)}
+                  disabled={busy}
+                  className="mt-3 self-center rounded-full border border-sage px-5 py-2 text-sm font-semibold text-sage disabled:opacity-50"
+                >
+                  Get my summary (PDF)
+                </button>
+              )}
             </>
           )}
         </section>
+
+        <SummaryPanel
+          open={showSummary}
+          onClose={() => setShowSummary(false)}
+          messages={messages}
+          mode={mode}
+          completed={done}
+        />
 
         {/* Checklist */}
         <aside className={`${showList ? "block" : "hidden"} rounded-3xl border border-line bg-card p-5 lg:block`}>

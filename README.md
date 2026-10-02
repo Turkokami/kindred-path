@@ -21,6 +21,8 @@ Open http://localhost:3000.
 | `ELEVENLABS_API_KEY` | No | ElevenLabs key (Text to Speech permission). Without it, Wren uses the browser's built-in voice. |
 | `ELEVENLABS_VOICE_ID` | No | Fallback voice when a request names none. Visitors pick from the voices in `src/lib/voices.ts` (Jessica is the default); add or rename voices there. |
 | `ELEVENLABS_MODEL` | No | Defaults to `eleven_flash_v2_5` (lowest latency, 0.5 credits/character). |
+| `RESEND_API_KEY` | No | Turns on "email me my summary". Needs a sending domain verified in Resend. |
+| `SUMMARY_EMAIL_FROM` | No | Sender for summary emails, e.g. `Wren at Kindred Path <wren@yourdomain>`. |
 | `GOOGLE_PLACES_API_KEY` | No | Places API (New) key for nearby listings on `/find`. Restrict it to Places API (New). Without it, `/find` shows only the trusted directories. |
 
 ## How it fits together
