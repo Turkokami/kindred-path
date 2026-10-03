@@ -7,6 +7,8 @@ import { isCrisis, maskPII } from "@/lib/safety";
 import { SUMMARY_SCHEMA, cleanSummary, type Summary } from "@/lib/summary";
 import { type Profile, profileLines, sanitizeProfile } from "@/lib/profile";
 
+import { guard } from "@/lib/guard";
+
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
@@ -42,8 +44,8 @@ ${journeyAsText(mode)}`;
 }
 
 export async function POST(req: Request) {
-  const origin = req.headers.get("origin");
-  if (origin && new URL(origin).host !== req.headers.get("host")) return json({ error: "forbidden" }, 403);
+  const blocked = await guard(req, "summary");
+  if (blocked) return blocked;
 
   let body: { messages?: ChatMessage[]; mode?: Mode; completed?: string[]; profile?: unknown };
   try {

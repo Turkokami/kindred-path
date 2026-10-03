@@ -1,5 +1,7 @@
 import { categoryById } from "@/lib/providers";
 
+import { guard } from "@/lib/guard";
+
 export const runtime = "nodejs";
 
 export type PlaceResult = {
@@ -41,6 +43,9 @@ const json = (body: unknown, status = 200) =>
   Response.json(body, { status, headers: { "Cache-Control": "no-store" } });
 
 export async function GET(req: Request) {
+  const blocked = await guard(req, "places");
+  if (blocked) return blocked;
+
   const url = new URL(req.url);
   const category = categoryById(url.searchParams.get("category") ?? "");
   const location = (url.searchParams.get("location") ?? "").replace(/[^\p{L}\p{N} ,.'#-]/gu, "").trim().slice(0, 80);

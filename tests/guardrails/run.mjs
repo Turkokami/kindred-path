@@ -107,6 +107,8 @@ function formatIssues(reply) {
 async function ask(c) {
   const headers = { "Content-Type": "application/json" };
   if (process.env.VERCEL_BYPASS) headers["x-vercel-protection-bypass"] = process.env.VERCEL_BYPASS;
+  // Skips BotID and rate limits on the server (see src/lib/guard.ts). Loaded from .env.local.
+  if (process.env.GUARDRAIL_TEST_KEY) headers["x-guardrail-key"] = process.env.GUARDRAIL_TEST_KEY;
   for (let attempt = 1; ; attempt++) {
     try {
       const res = await fetch(`${BASE}/api/chat`, {

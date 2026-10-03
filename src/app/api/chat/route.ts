@@ -4,6 +4,8 @@ import { maskPII } from "@/lib/safety";
 import { sanitizeProfile } from "@/lib/profile";
 import type { Mode } from "@/lib/content";
 
+import { guard } from "@/lib/guard";
+
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
@@ -12,6 +14,9 @@ type ChatMessage = { role: "user" | "assistant"; content: string };
 const MODEL = process.env.ANTHROPIC_MODEL || "claude-sonnet-5-5";
 
 export async function POST(req: Request) {
+  const blocked = await guard(req, "chat", { text: true });
+  if (blocked) return blocked;
+
   let body: { messages?: ChatMessage[]; mode?: Mode; completed?: string[]; profile?: unknown };
   try {
     body = await req.json();

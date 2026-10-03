@@ -4,6 +4,8 @@
 
 import { DEFAULT_VOICE_KEY, voiceByKey } from "@/lib/voices";
 
+import { guard } from "@/lib/guard";
+
 export const runtime = "nodejs";
 export const maxDuration = 30;
 
@@ -23,8 +25,9 @@ export async function POST(req: Request) {
   }
 
   // Only our own pages may spend ElevenLabs credits.
-  const origin = req.headers.get("origin");
-  if (origin && new URL(origin).host !== req.headers.get("host")) return json({ error: "forbidden" }, 403);
+  // Same-origin, BotID, and rate limit. Blocked clips fall back to the browser voice.
+  const blocked = await guard(req, "tts");
+  if (blocked) return blocked;
 
   let body: { text?: unknown; previous_text?: unknown; voice?: unknown };
   try {

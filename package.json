@@ -8,11 +8,13 @@
     "start": "next start",
     "lint": "eslint",
     "test:unit": "node --no-warnings --test tests/guardrails/safety.test.mjs",
-    "test:guardrails": "node tests/guardrails/run.mjs",
+    "test:guardrails": "node --env-file-if-exists=.env.local tests/guardrails/run.mjs",
     "test:guardrails:rescore": "node tests/guardrails/run.mjs --rescore"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.131.0",
+    "@vercel/analytics": "^2.0.1",
+    "botid": "^1.5.11",
     "jspdf": "^3.0.4",
     "next": "15.5.27",
     "react": "19.1.0",

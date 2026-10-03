@@ -29,7 +29,13 @@ export default function FindProfessional({ initialCategory }: { initialCategory?
       }
       if (!res.ok) {
         setStatus("error");
-        setMessage(data.error === "search_failed" ? "The search didn't work just now. Please try again." : data.error);
+        setMessage(
+          data.error === "rate_limited"
+            ? "That's a lot of searches in a short time. Please wait a few minutes and try again."
+            : data.error === "search_failed" || data.error === "forbidden"
+              ? "The search didn't work just now. Please reload the page and try again."
+              : data.error,
+        );
         return;
       }
       setResults(data.results);

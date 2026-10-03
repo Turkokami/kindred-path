@@ -1,6 +1,8 @@
 // Emails a person their summary PDF through Resend. Off until RESEND_API_KEY and SUMMARY_EMAIL_FROM
 // (an address on a domain verified in Resend) are set. The address is used once and not stored.
 
+import { guard } from "@/lib/guard";
+
 export const runtime = "nodejs";
 
 const MAX_PDF_BYTES = 2_000_000;
@@ -17,8 +19,8 @@ export async function GET() {
 
 export async function POST(req: Request) {
   if (!configured()) return json({ error: "not_configured" }, 503);
-  const origin = req.headers.get("origin");
-  if (origin && new URL(origin).host !== req.headers.get("host")) return json({ error: "forbidden" }, 403);
+  const blocked = await guard(req, "email");
+  if (blocked) return blocked;
 
   let body: { email?: unknown; pdf?: unknown; consent?: unknown };
   try {
