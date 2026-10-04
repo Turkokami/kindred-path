@@ -65,6 +65,19 @@ body {
   transform-origin: 50% 40%;
   animation: breathe 6s ease-in-out infinite;
 }
+/* WebGL living portrait (src/lib/wrenWarp.ts) sits above the static picture and fades in. */
+.avatar-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  transition: opacity 0.4s ease;
+}
+.avatar-scene-hidden {
+  visibility: hidden;
+  animation: none;
+}
 .avatar-overlay {
   position: absolute;
   max-width: none;

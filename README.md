@@ -31,7 +31,7 @@ Open http://localhost:3000.
 - `src/lib/systemPrompt.ts` defines Wren's persona and guardrails (no legal advice, no document drafting, crisis handling).
 - `src/app/api/chat/route.ts` streams replies from Claude. It masks SSNs, account/card numbers and written-out passwords before they reach the model.
 - `src/lib/safety.ts` holds the crisis-phrase check (drives the 988 banner) and the PII masking.
-- `src/components/Avatar.tsx` draws Wren in SVG with idle, listening, thinking, and talking states. Phase 3 swaps this for a Rive character using the same props.
+- `src/components/Avatar.tsx` shows Wren (idle, listening, thinking, talking) with mouth and blink frames; `src/lib/wrenWarp.ts` animates the illustration in WebGL (sway, head tilt, nods, breathing, hair). A Rive or Live2D rig can replace it behind the same `state` / `mouthOpen` props.
 - `src/components/Guide.tsx` handles chat, browser speech-to-text (mic), browser text-to-speech with lip sync, and the saved checklist.
 
 ## Guardrail tests
